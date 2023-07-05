@@ -7,7 +7,7 @@ async function main() {
     const Swapper  = await hre.ethers.getContractFactory("Swapper");
     const swapper  = Swapper.attach(swapperAddress);
 
-    const usdcTokenAddress = TokenId.fromString(process.env.TS_USDC_ACCOUNT_ID).toSolidityAddress();
+    const usdcTokenAddress = TokenId.fromString(process.env.USDC_ACCOUNT_ID).toSolidityAddress();
 
     const associateResponse = await swapper.associateToken(
         usdcTokenAddress,

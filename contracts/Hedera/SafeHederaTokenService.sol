@@ -10,6 +10,12 @@ abstract contract SafeHederaTokenService is HederaTokenService {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe single association failed!");
     }
 
+    function safeApprove(address token, address spender, uint256 amount) internal {
+        int256 responseCode;
+        (responseCode) = HederaTokenService.approve(token, spender, amount);
+        require(responseCode == HederaResponseCodes.SUCCESS, "Safe single approval failed!");
+    }
+
     function safeGrantTokenKyc(address account, address token) internal {
         int256 responseCode;
         (responseCode) = HederaTokenService.grantTokenKyc(token, account);

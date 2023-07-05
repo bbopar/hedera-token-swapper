@@ -2,7 +2,8 @@ require("@nomicfoundation/hardhat-toolbox");
 
 require("dotenv").config();
 
-const PRIVATE_KEY = process.env.HEX_PRIVATE_KEY;
+const PRIVATE_KEY = process.env.TREASURY_HEX_PRIVATE_KEY;
+// const PRIVATE_KEY = process.env.ADMIN_HEX_PRIVATE_KEY;
 
 module.exports = {
   defaultNetwork: "testnet",

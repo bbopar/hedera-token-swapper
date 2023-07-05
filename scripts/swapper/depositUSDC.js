@@ -1,4 +1,3 @@
-const { TokenId } = require('@hashgraph/sdk');
 const hre = require("hardhat");
 require('dotenv').config();
 
@@ -7,10 +6,7 @@ async function main() {
     const Swapper  = await hre.ethers.getContractFactory("Swapper");
     const swapper  = Swapper.attach(contractAddr);
 
-    const amount = 100;
-    const usdcTokenAddress = TokenId.fromString(process.env.TS_USDC_ACCOUNT_ID).toSolidityAddress();
-
-    const depositResponse = await swapper.deposit(usdcTokenAddress, amount);
+    const depositResponse = await swapper.deposit(100);
 
     console.log("Deposit response: ", depositResponse);
 

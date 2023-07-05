@@ -4,8 +4,8 @@ require('dotenv').config();
 /**
  * Constants.
  */
-const treasuryAccountID = process.env.ACCOUNT_ID;
-const treasuryPrivateKey = PrivateKey.fromString(process.env.DER_PRIVATE_KEY);
+const treasuryAccountID = process.env.TREASURY_ACCOUNT_ID;
+const treasuryPrivateKey = PrivateKey.fromString(process.env.TREASURY_DER_PRIVATE_KEY);
 const treasuryPublicKey = treasuryPrivateKey.publicKey;
 
 // Create a Hedera client
@@ -17,8 +17,8 @@ client.setOperator(treasuryAccountID, treasuryPrivateKey);
  */
 async function main() {
   const transaction = new TokenCreateTransaction()
-    .setTokenName("BlahToken")
-    .setTokenSymbol("BT")
+    .setTokenName("BBBT")
+    .setTokenSymbol("BBBT")
     .setDecimals(0)
     .setInitialSupply(1000000)
     .setTreasuryAccountId(treasuryAccountID)
@@ -30,7 +30,7 @@ async function main() {
   const receipt = await response.getReceipt(client);
   const tokenId = receipt.tokenId;
 
-  console.log('🚀 ~ file: createUsdcToken.js:36 ~ main ~ tokenId:', tokenId);
+  console.log('🚀 Created Barrage FT, tokenId:', tokenId);
 }
 
 main().catch((error) => {

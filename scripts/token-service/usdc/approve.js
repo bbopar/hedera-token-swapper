@@ -4,22 +4,25 @@ require('dotenv').config();
 /**
  * Constants.
  */
-const treasuryAccountID = process.env.ACCOUNT_ID;
-const treasuryPrivateKey = PrivateKey.fromString(process.env.DER_PRIVATE_KEY);
+const treasuryAccountID = process.env.TREASURY_ACCOUNT_ID;
+const treasuryPrivateKey = PrivateKey.fromString(process.env.TREASURY_DER_PRIVATE_KEY);
 
 // Create a Hedera client
 const client = Client.forTestnet(); // or Client.forMainnet()
 client.setOperator(treasuryAccountID, treasuryPrivateKey);
 
 async function main() {
-  const tokenId = process.env.TS_BARRAGE_ACCOUNT_ID;
+  const tokenId = process.env.USDC_ACCOUNT_ID;
   const swapperId = process.env.SWAP_CONTRACT_ID;
-  const accountId = process.env.ADMIN_ACCOUNT_ID;
-  const privKey = PrivateKey.fromString(process.env.ADMIN_DER_PRIV_KEY);
 
+  const accountId = process.env.TREASURY_ACCOUNT_ID;
+  const privKey = PrivateKey.fromString(process.env.TREASURY_DER_PRIVATE_KEY);
+
+  // const accountId = process.env.ADMIN_ACCOUNT_ID;
+  // const privKey = PrivateKey.fromString(process.env.ADMIN_EVM_ADDRESS);
 
   const tx = await new AccountAllowanceApproveTransaction()
-    .approveTokenAllowance(tokenId, treasuryAccountID, swapperId, 100000)
+    .approveTokenAllowance(tokenId, accountId, swapperId, 100000)
     .freezeWith(client)
     .sign(privKey);
 

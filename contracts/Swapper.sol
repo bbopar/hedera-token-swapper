@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./Hedera/SafeHederaTokenService.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Swapper is SafeHederaTokenService {
+contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
+    bytes32 public constant WHITELISTED_ROLE = keccak256("WHITELISTED_ROLE");
+
     IERC20 public usdc;
     IERC20 public barrage;
     address public admin;
@@ -14,6 +18,7 @@ contract Swapper is SafeHederaTokenService {
         usdc = IERC20(_usdc);
         barrage = IERC20(_barrage);
         admin = msg.sender;
+        _setupRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     modifier onlyAdmin() {
@@ -21,32 +26,44 @@ contract Swapper is SafeHederaTokenService {
         _;
     }
 
-    function associateToken(address token) public onlyAdmin {
+    function approveSpender(address token, address spender, uint256 amount) public onlyAdmin whenNotPaused {
+        safeApprove(token, spender, amount);
+    }
+
+    function associateToken(address token) public onlyAdmin whenNotPaused {
         safeAssociateToken(address(this), token);
     }
 
-    function deposit(address token, int64 amount) public {
-        safeTransferToken(token, msg.sender, address(this), amount);
+    function deposit(uint256 amount) external onlyAdmin whenNotPaused {
+        require(usdc.transferFrom(msg.sender, address(this), amount), "Transfer failed");
     }
 
-    function grantTokenKyc(address token) public onlyAdmin {
-        safeGrantTokenKyc(address(this), token);
+    function getBalanceUSDC() external view onlyAdmin whenNotPaused returns (uint256) {
+        return usdc.balanceOf(address(this));
     }
 
-    function swap(address barrageAddr, address usdcAddr, int64 amount) public {
-        safeTransferToken(barrageAddr, msg.sender, address(this), amount);
-        safeTransferToken(usdcAddr, address(this), msg.sender, amount);
+    function getAmountForWithdraw() external view whenNotPaused returns (uint256) {
+        require(hasRole(WHITELISTED_ROLE, msg.sender), "Only whitelisted addresses can call this function");
+        return barrage.balanceOf(msg.sender);
     }
 
-    function tokenAllowance(address token) public onlyAdmin {
-        safeTokenAllowance(token, msg.sender, address(this));
+    function removeWhitelistedAddress(address _address) external onlyAdmin whenNotPaused {
+        revokeRole(WHITELISTED_ROLE, _address);
     }
 
-    function usdcBalanceOf(address account) public view returns (uint256) {
-        return usdc.balanceOf(account);
+    function stop() external onlyAdmin whenNotPaused {
+        uint256 balance = usdc.balanceOf(address(this));
+        require(usdc.transferFrom(address(this), msg.sender, balance), "Transfer failed");
+        _pause();
     }
 
-    function barrageBalanceOf(address account) public view returns (uint256) {
-        return barrage.balanceOf(account);
+    function swap(uint256 amount) external whenNotPaused {
+        require(hasRole(WHITELISTED_ROLE, msg.sender), "Only whitelisted addresses can call this function");
+        require(barrage.transferFrom(msg.sender, admin, amount), "Transfer failed");
+        require(usdc.transferFrom(address(this), msg.sender, amount), "Transfer failed");
+    }
+
+    function whitelistAddress(address _address) external onlyAdmin whenNotPaused {
+        grantRole(WHITELISTED_ROLE, _address);
     }
 }

@@ -1,4 +1,3 @@
-const { TokenId } = require('@hashgraph/sdk');
 const hre = require("hardhat");
 require('dotenv').config();
 
@@ -7,10 +6,16 @@ async function main() {
     const Swapper  = await hre.ethers.getContractFactory("Swapper");
     const swapper  = Swapper.attach(swapperAddress);
 
-    const barrageTokenAddress = TokenId.fromString(process.env.TS_BARRAGE_ACCOUNT_ID).toSolidityAddress();
+    const usdcTokenAddress = process.env.USDC_CONTRACT_ADDRESS;
+    const barrageTokenAddress = process.env.BARRAGE_CONTRACT_ADDRESS;
 
-    const associateResponse = await swapper.associateToken(
-      barrageTokenAddress,
+    // address token, 
+    // address spender,
+    // uint256 amount
+    const associateResponse = await swapper.approveSpender(
+        barrageTokenAddress,
+        swapperAddress,
+        100000,
         { gasLimit: 15000000 },
     );
 
