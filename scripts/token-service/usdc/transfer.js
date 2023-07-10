@@ -12,8 +12,11 @@ const client = Client.forTestnet(); // or Client.forMainnet()
 client.setOperator(treasuryAccountID, treasuryPrivateKey);
 
 async function main() {
-  const tokenId = process.env.USDC_CONTRACT_ADDRESS;
-  const accountId = process.env.ADMIN_ACCOUNT_ID;
+  const tokenId = process.env.USDC_ACCOUNT_ID;
+  // const accountId = process.env.ADMIN_ACCOUNT_ID;
+  const accountId = '0.0.4266232'; // This my admin in the WALLET.
+
+  const amount = 10000;
 
   const tx = await new TransferTransaction()
     .addTokenTransfer(tokenId, treasuryAccountID, -amount)

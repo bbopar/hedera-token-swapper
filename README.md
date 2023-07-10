@@ -29,97 +29,149 @@ To compile the contracts run:
 npx hardhat compile
 ```
 
-## Example usage `swapper` on testnet
+## Contract artifacts
 
-### 1. Create `USDC token` on testnet
+The contract artifacts should be located in the project root under `artifacts` directory.
 
-```
-node scripts/token-service/usdc/create.js
-```
-
-output:
+Loading `Swapper` abi:
 
 ```
-🚀 Created USDC FT, tokenId: 0.0.15052216
+import { abi } from '../artifacts/contracts/Swapper.sol/Swapper.json';
 ```
 
-### 2. Create `Barrage token` on testnet
+## Example usage.
+
+### Deployer account setup
+
+To deploy the contract on `testnet` the `Deployer` account must be setup in the .env file.
 
 ```
-node scripts/token-service/barrage/create.js
+DEPLOYER_ACCOUNT_ID=
+DEPLOYER_EVM_ADDRESS=
+DEPLOYER_HEX_PRIVATE_KEY=
+DEPLOYER_DER_PRIVATE_KEY=
 ```
 
-output:
+### Setting up hardhat.config.js
+
+Setup the contract deployer in `hardhat.config.js`.
+
+The private key provided in `hardhat.config.js` must be HEX priv key.
 
 ```
-🚀 Created Barrage FT, tokenId: 0.0.15052197
+const PRIVATE_KEY = process.env.DEPLOYER_HEX_PRIVATE_KEY;
 ```
 
-For the next step you'll need ACCOUNT_IDS of tokens which you got in the output after creation.
+## Setup
 
-Setup those IDS to .env and search for the EVM address of both tokens [here](https://hashscan.io/testnet), then paste it to your .env.
+Under the `scripts` directory you can find `setup` script. After the `deployer` account is setup in .env file run `setup` script:
 
+```
+npm run setup-accounts
+```
 
-### 3. Deploying the Swapper Contract
+This script will create `setup.json` file in the root of the project which is necessary for testing `Swapper`.
 
-To deploy the `Swapper` contract you must setup your .env file. 
+In the last step of `setup` the compiled contract from `artifacts/contracts/Swapper.sol` will be deployed.
 
-Then deploy `Swapper`:
+example:
+
+```
+  "barrage": {
+    "name": "XTether",
+    "supply": 10000,
+    "tokenId": "0.0.15071227",
+    "evmAddress": "0000000000000000000000000000000000e5f7fb",
+    "status": "SUCCESS"
+  },
+  "usdc": {
+    "name": "XBarrageToken",
+    "supply": 10000,
+    "tokenId": "0.0.15071225",
+    "evmAddress": "0000000000000000000000000000000000e5f7f9",
+    "status": "SUCCESS"
+  },
+  "COMPANY_ADMIN_ACCOUNT_ID": "0.0.15071223",
+  "COMPANY_ADMIN_PRIVATE_KEY": "",
+  "COMPANY_ADMIN_PRIVATE_KEY_DER": "302e020100300506032b6570042204206994617bb7cd5d3b9e508cc1255e5f84467ba333c72e598c30fa917a22e95d59",
+  "EMPLOYEE_ACCOUNT_ID": "0.0.15071224",
+  "EMPLOYEE_PRIVATE_KEY": "",
+  "EMPLOYEE_PRIVATE_KEY_DER": "302e020100300506032b657004220420e236f59e91a7e5efe02e67fbfab3bcfe20f56944e54a2034c1f411d61878fbfb",
+  "contractAddress": "0x59f13Cef084Baf9B10811d6c04eD2CbE33Dd75bb",
+```
+
+Look up for `contractAddress` in the settings.json, copy the address and search the contractID [here](https://hashscan.io/testnet).
+
+Past the `contractId` down below `contractAddress` in `settings.json`.
+
+The `deployer` account is the contract `ADMIN`.
+
+Suggestion is to add admin role for `COMPANY_ADMIN_ACCOUNT_ID` to replicate the case on `mainnet` for merit-money.
+
+## Grant Admin role
+
+As the PRIVATE_KEY defined in `hardhat.config.js` is the contract `ADMIN` that accounts is in charge for granting role
+
+to merit-money COMPANY_ADMIN which will be responsible for the `ADMIN` contract interaction.
+
+The `EMPLOYEES` must be whitelisted so that they have a right to `Swap` their bonus tokens with stablecoin.
+
+Note: this scripts for granting role uses `@hashgraph/sdk` while for deploy with don't need it at all.
+
+Before running the script for granting admin role please setup your new `COMPANY_ADMIN` account in the script.
+
+The script is located under: `scripts/setup/grantAdminRole`.
+
+Running the script:
+
+```
+npm run grant-admin-role
+```
+
+From now on everything else can be done with `unit test` or `HashPack wallet`.
+
+## Smart contract interaction - showcase: Unit tests
+
+Before running unit tests the `setup` and `grant role to admin` must be done.
+
+Unit tests for `Swapper` interaction are located under the `test` directory.
+
+Make sure that your `contractId` is setup in `setup.json` file.
+
+In the `unit` test flow you can find all required state changes before the `ADMIN` is able to deposit.
+
+- should associate `swapper` with USDC token
+- should approve allowance for SC to make transfer on behalf of sender (USDC)
+
+For `EMPLOYEE` to swap:
+
+- should approve allowance for SC to make transfer on behalf of sender (BT)
+
+Running unit tests:
+
+```
+npm run test
+```
+
+## Deploy (as stand-alone)
+
+Script for `deploy` uses `hardhat` for contract deployment.
+
+The complied contracts should be deployed with the command:
 
 ```
 node scripts/swapper/deploy.js
 ```
 
-output:
+Script output:
 
 ```
-Swapper contract address: 0x123c022C341D14ceDA9D991c65F123e9043e9B69
+Swapper contract address: 0x81c2e51a55f21b0246754C4e11C749F0f2C8d443
 ```
+The recommendation is to off-load the deployment to backend services.
 
-Setup the EVM address of `Swapper` to your .env.
+The reason is that you can't deploy such large contract with hashpack wallet.
 
-### 4. Admin Deposit
+Because of that suggestion is to read `privKey` from `vault` or `.env` file
 
-Before the admin can deposit, there are a few changes that need to be made to the state of the ERC20 contracts.
-
-1. **Associate the `ADMIN` account with `USDC` and `BT`:**
-
-    If you use the `TREASURY` account as `ADMIN`, you can skip this step.
-
-    Before associating, you should set up the .env file and change what's being loaded in the script from .env.
-
-    ```
-    node scripts/token-service/usdc/associate.js
-    node scripts/token-service/barrage/associate.js
-    ```
-
-2. **Associate the `EMPLOYEE` account with `USDC` and `BT`:**
-
-    Change the accounts being loaded into the script and run:
-
-    ```
-    node scripts/token-service/usdc/associate.js
-    node scripts/token-service/barrage/associate.js
-    ```
-
-3. **Associate the `SWAPPER` account with `USDC` and `BT`:**
-
-    ```
-    node scripts/swap/associateWithUSDC.js
-    node scripts/swap/associateWithBT.js
-    ```
-
-4. **Approve the `ADMIN` account for spending `USDC` and `BT`:**
-
-    ```
-    node scripts/token-service/usdc/approve.js
-    node scripts/token-service/barrage/approve.js
-    ```
-
-5. **Approve the `SWAPPER` account for spending `USDC` and `BT`:**
-
-    ```
-    node scripts/swap/approve.js
-    ```
-
-Now, the admin is ready to deposit, and employees can withdraw their stablecoin if they possess BarrageToken.
+and then deploy the contract using backend.

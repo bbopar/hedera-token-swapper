@@ -8,8 +8,6 @@ async function main() {
 
     const depositResponse = await swapper.deposit(100);
 
-    console.log("Deposit response: ", depositResponse);
-
     const receipt = await depositResponse.wait();
     
     console.log("Deposit receipt: ", receipt);

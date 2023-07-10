@@ -13,9 +13,10 @@ client.setOperator(treasuryAccountID, treasuryPrivateKey);
 
 async function main() {
   const tokenId = process.env.BARRAGE_ACCOUNT_ID;
-  const accountId = process.env.ADMIN_ACCOUNT_ID;
+  // const accountId = process.env.ADMIN_ACCOUNT_ID;
+  const accountId = '0.0.4066176';
 
-  const amount = 100;
+  const amount = 1000;
 
   const tx = await new TransferTransaction()
     .addTokenTransfer(tokenId, treasuryAccountID, -amount)
