@@ -12,9 +12,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @dev Swapper contract that inherits from SafeHederaTokenService, Ownable, Pausable, and AccessControl contracts.
  */
 contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
-    // Defining a constant for the WHITELISTED_ROLE using keccak256 hash function
-    bytes32 public constant WHITELISTED_ROLE = keccak256("WHITELISTED_ROLE");
-
     // Defining public state variables for the USDC and Barrage tokens and the admin address
     IERC20 public usdc;
     IERC20 public barrage;
@@ -45,14 +42,6 @@ contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
     }
 
     /**
-     * @dev Modifier that requires the caller to have the WHITELISTED_ROLE.
-     */
-    modifier onlyWhitelisted() {
-        require(hasRole(WHITELISTED_ROLE, msg.sender), "Only whitelisted addresses can call this function");
-        _;
-    }
-
-    /**
      * @dev Function that associates a token with the contract.
      * @param _token Address of the token contract.
      */
@@ -78,10 +67,10 @@ contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
     }
 
     /**
-     * @dev Function that returns the amount of Barrage tokens that a whitelisted address can withdraw.
+     * @dev Function that returns the amount of Barrage tokens that address can withdraw.
      * @return uint256 Amount of Barrage tokens that can be withdrawn.
      */
-    function getAmountForWithdraw() external view onlyWhitelisted whenNotPaused returns (uint256) {
+    function getAmountForWithdraw() external view whenNotPaused returns (uint256) {
         return barrage.balanceOf(msg.sender);
     }
 
@@ -91,16 +80,6 @@ contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
      */
     function grantAdminRole(address _address) external onlyAdmin whenNotPaused {
         grantRole(DEFAULT_ADMIN_ROLE, _address);
-    }
-
-    /**
-     * @dev Function that allows the admin to remove an address from the whitelist.
-     * @param _address Address to be removed from the whitelist.
-     */
-    function removeWhitelistedAddress(address _address) external onlyAdmin whenNotPaused {
-        uint256 balance = barrage.balanceOf(_address);
-        require(barrage.transferFrom(_address, admin, balance));
-        revokeRole(WHITELISTED_ROLE, _address);
     }
 
     /**
@@ -122,20 +101,12 @@ contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
     }
 
     /**
-     * @dev Function that allows a whitelisted address to swap their Barrage tokens for USDC tokens at a 1:1 ratio.
+     * @dev Function that allows owner of ERC20 to swap their tokens for USDC tokens at a 1:1 ratio.
      */    
-    function swap() external onlyWhitelisted whenNotPaused {
+    function swap() external whenNotPaused {
         uint256 balance = barrage.balanceOf(msg.sender);
         require(barrage.transferFrom(msg.sender, admin, balance), "Transfer failed");
         require(usdc.transfer(msg.sender, balance), "Transfer failed");
         emit Swapped(address(this), msg.sender, balance);
-    }
-
-    /**
-     * @dev Function that allows the admin to add an address to the whitelist.
-     * @param _address Address to be added to the whitelist.
-     */
-    function whitelistAddress(address _address) external onlyAdmin whenNotPaused {
-        grantRole(WHITELISTED_ROLE, _address);
     }
 }
