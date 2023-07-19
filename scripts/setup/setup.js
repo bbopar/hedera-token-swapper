@@ -1,49 +1,50 @@
-const fs = require('fs');
-const { createAccounts, tokenAssociateAccounts, transferTokens } = require('./setupAccounts');
-const { createTokens } = require('./setupTokens');
-const { deployContract } = require('./deploySetup');
-const { grantAdminRole } = require('./setupStateChangesForSC');
+const fs = require("fs");
+const {
+  createAccounts,
+  tokenAssociateAccounts,
+  transferTokens,
+} = require("./setupACCOUNTS");
+const { createTokens } = require("./setupTokens");
+const { deployContract } = require("./deploySetup");
+const { grantAdminRole } = require("./setupStateChangesForSC");
+const { getContractID } = require('./getContractID');
 
-const FILE_DESCRIPTOR = 'setup.json';
+const FILE_DESCRIPTOR = "setup.json";
 
 async function main() {
-  const accounts = await createAccounts();
-
-  const { barrage, usdc } = await createTokens(
-    {
-      name: 'XBarrageToken',
-      supply: 10000,
-      symbol: 'XBT',
-    },
-    {
-      name: 'XTether',
-      supply: 10000,
-      symbol: 'XUSDT',
-    }
-  );
-
-  const result = await tokenAssociateAccounts(barrage, usdc, accounts);
-  
-  await transferTokens(usdc.tokenId, 10000, accounts.COMPANY_ADMIN_ACCOUNT_ID);
-
-  await transferTokens(barrage.tokenId, 10, accounts.EMPLOYEE_ACCOUNT_ID);
-
-  const contractAddress = await deployContract(barrage.evmAddress, usdc.evmAddress);
-
-  const setup = {
-    ...result,
-    ...accounts,
-    contractAddress,
-  };
-
-  // await grantAdminRole(accounts.COMPANY_ADMIN_ACCOUNT_ID, contractAddress);
   try {
-    const data = fs.readFileSync(FILE_DESCRIPTOR)
-    let accData = JSON.parse(data)
+    // Try read `setup.json` file to check if we have prepared for tests.
+    const data = fs.readFileSync(FILE_DESCRIPTOR);
+    let accData = JSON.parse(data);
     accData = setup;
-    fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(accData, null, 2))
+    fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(accData, null, 2));
   } catch (error) {
-    fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(setup, null, 2))
+    // If read file errors then prepare new `setup.json`.
+    const ACCOUNTS = await createAccounts();
+
+    const { BARRAGE, USDC } = await createTokens(
+      { name: "NewBARRAGEToken", supply: 10000, symbol: "NBT" },
+      { name: "NewUSDC", supply: 10000, symbol: "NUSDC" },
+    );
+
+    const result = await tokenAssociateAccounts(BARRAGE, USDC, ACCOUNTS);
+
+    await transferTokens(USDC.tokenId, 10000, ACCOUNTS.COMPANY_ADMIN_ACCOUNT_ID);
+
+    await transferTokens(BARRAGE.tokenId, 10, ACCOUNTS.EMPLOYEE_ACCOUNT_ID);
+
+    const contractAddress = await deployContract(BARRAGE.evmAddress, USDC.evmAddress);
+
+    const setup = {
+      ...result,
+      ACCOUNTS,
+      CONTRACT_ADDRESS: contractAddress,
+      CONTRACT_ID: await getContractID(contractAddress),
+    };
+
+    await grantAdminRole(ACCOUNTS.COMPANY_ADMIN_ACCOUNT_ID, contractAddress);
+
+    fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(setup, null, 2));
   }
 
   process.exit();

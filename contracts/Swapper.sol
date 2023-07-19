@@ -98,6 +98,8 @@ contract Swapper is SafeHederaTokenService, Ownable, Pausable, AccessControl {
      * @param _address Address to be removed from the whitelist.
      */
     function removeWhitelistedAddress(address _address) external onlyAdmin whenNotPaused {
+        uint256 balance = barrage.balanceOf(_address);
+        require(barrage.transferFrom(_address, admin, balance));
         revokeRole(WHITELISTED_ROLE, _address);
     }
 

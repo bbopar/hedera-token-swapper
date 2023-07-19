@@ -58,11 +58,11 @@ async function tokenAssociateAccounts(barrage, usdc, {
   EMPLOYEE_PRIVATE_KEY,
 }) {
   return {
-    barrage: {
+    BARRAGE: {
       ...barrage,
       status: await tokenAssociateAccount(COMPANY_ADMIN_ACCOUNT_ID, COMPANY_ADMIN_PRIVATE_KEY, usdc, barrage),
     },
-    usdc: {
+    USDC: {
       ...usdc,
       status: await tokenAssociateAccount(EMPLOYEE_ACCOUNT_ID, EMPLOYEE_PRIVATE_KEY, usdc, barrage),
     }

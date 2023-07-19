@@ -10,7 +10,8 @@ client.setOperator(treasuryAccountID, treasuryPrivateKey);
 async function main() {
   const amount = 1000;
 
-  const receiver = process.env.BBOPAR_ACCOUNT_ID;
+  // const receiver = process.env.BBOPAR_ACCOUNT_ID;
+  const receiver = '0.0.15421290';
 
   const transferTx = new TransferTransaction()
         .addHbarTransfer(treasuryAccountID, -amount)

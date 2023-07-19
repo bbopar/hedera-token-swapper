@@ -9,13 +9,13 @@ const client = Client.forTestnet();
 client.setOperator(treasuryAccountID, treasuryPrivateKey);
 
 async function createTokens(usd, bt) {
-  const usdc = await createToken(usd.name, usd.symbol, usd.supply);
+  const USDC = await createToken(usd.name, usd.symbol, usd.supply);
 
-  const barrage = await createToken(bt.name, bt.symbol, bt.supply);
+  const BARRAGE = await createToken(bt.name, bt.symbol, bt.supply);
 
   return {
-    barrage,
-    usdc,
+    BARRAGE,
+    USDC,
   }
 }
 

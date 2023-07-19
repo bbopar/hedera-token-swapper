@@ -1,4 +1,3 @@
-
 const {
   AccountAllowanceApproveTransaction,
   AccountBalanceQuery,
@@ -26,7 +25,6 @@ const {
 let treasuryAccountID;
 let treasuryPrivateKey;
 let client;
-
 
 describe('Swapper test', () => {
 

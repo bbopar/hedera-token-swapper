@@ -1,3 +1,4 @@
+const { Hbar, HbarUnit } = require("@hashgraph/sdk");
 const { ethers } = require("hardhat");
 
 async function main() {
@@ -6,6 +7,9 @@ async function main() {
   const balance = (await wallet.getBalance()).toString();
 
   console.log(`The address ${wallet.address} has ${balance} tinybars`);
+
+  const bars = Hbar.fromTinybars(balance);
+  console.log(`The address ${wallet.address} has ${bars.toString()} hbars`);
 
   return balance;
 }
