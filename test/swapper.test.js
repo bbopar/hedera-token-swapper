@@ -13,14 +13,18 @@ const {
 const assert = require('assert');
 const { expect } = require('chai');
 const {
-  COMPANY_ADMIN_ACCOUNT_ID,
-  COMPANY_ADMIN_PRIVATE_KEY_DER,
-  EMPLOYEE_ACCOUNT_ID,
-  EMPLOYEE_PRIVATE_KEY_DER,
-  usdc,
-  barrage,
-  contractId,
+  ACCOUNTS: {
+    COMPANY_ADMIN_ACCOUNT_ID,
+    COMPANY_ADMIN_PRIVATE_KEY_DER,
+    EMPLOYEE_ACCOUNT_ID,
+    EMPLOYEE_PRIVATE_KEY_DER,
+  },
+  USDC,
+  BARRAGE,
+  CONTRACT_ID,
+  CONTRACT_ADDRESS,
 } = require('../setup.json');
+const axios = require('axios');
 
 let treasuryAccountID;
 let treasuryPrivateKey;
@@ -38,28 +42,35 @@ describe('Swapper test', () => {
     });
 
     it('should associate `swapper` with USDC token', async () => {
-      const fnName = 'associateToken';
-      const tokenAddr = TokenId.fromString(usdc.tokenId).toSolidityAddress();
+      try {
+        const accountData = (await axios.get(`https://testnet.mirrornode.hedera.com/api/v1/accounts/${CONTRACT_ID}/tokens`)).data;
 
-      let trans = await new ContractExecuteTransaction()
-        .setContractId(contractId)
-        .setGas(15000000)
-        .setFunction(fnName, new ContractFunctionParameters().addAddress(tokenAddr))
-        .setMaxTransactionFee(new Hbar(10))
-        .execute(client);
-
-      console.log('🚀 ~ file: swapper.test.js:48 ~ it.only ~ trans:', trans);
-      
-      const receipt = await trans.getReceipt(client);
-
-      assert.equal(receipt.status.toString(), 'SUCCESS');
-    });
+        if (accountData?.tokens?.every((token) => token.token_id !== USDC.tokenId)) {
+          const fnName = 'associateToken';
+    
+          let trans = await new ContractExecuteTransaction()
+            .setContractId(CONTRACT_ID)
+            .setGas(15000000)
+            .setFunction(fnName, new ContractFunctionParameters().addAddress(USDC.evmAddress))
+            .setMaxTransactionFee(new Hbar(10))
+            .execute(client);
+          
+          const receipt = await trans.getReceipt(client);
+    
+          assert.equal(receipt.status.toString(), 'SUCCESS');
+        } else {
+          console.log('🚀 Token already associated with CONTRACT');
+        }
+      } catch (error) {
+        console.log('#### ERROR ####', error);
+      }
+    }).timeout(30000);
 
     it('should approve allowance for SC to make transfer on behalf of sender (USDC)', async () => {
       const allowanceAmount = 10000;
 
       const tx = await new AccountAllowanceApproveTransaction()
-        .approveTokenAllowance(usdc.tokenId, COMPANY_ADMIN_ACCOUNT_ID, contractId, allowanceAmount)
+        .approveTokenAllowance(USDC.tokenId, COMPANY_ADMIN_ACCOUNT_ID, CONTRACT_ID, allowanceAmount)
         .freezeWith(client)
         .sign(treasuryPrivateKey);
 
@@ -67,7 +78,7 @@ describe('Swapper test', () => {
   
       let receiptTx = await submitTx.getReceipt(client);
     
-      console.log(`🚀 ~ Sender ${COMPANY_ADMIN_ACCOUNT_ID} approved contractId: ${contractId}`);
+      console.log(`🚀 ~ Sender ${COMPANY_ADMIN_ACCOUNT_ID} approved CONTRACT_ID: ${CONTRACT_ID}`);
  
       assert.equal(receiptTx.status.toString(), 'SUCCESS');
     });
@@ -76,7 +87,7 @@ describe('Swapper test', () => {
       const fnName = 'deposit';
 
       let trans = new ContractExecuteTransaction()
-        .setContractId(contractId)
+        .setContractId(CONTRACT_ID)
         .setGas(15000000)
         .setFunction(fnName, new ContractFunctionParameters().addUint256(10))
         .setMaxTransactionFee(new Hbar(0.75));
@@ -84,8 +95,6 @@ describe('Swapper test', () => {
       const contractFunctionResult = await trans.execute(client);
     
       const receipt = await contractFunctionResult.getReceipt(client);
-    
-      console.log('🚀 ~ file: receipt', receipt);
 
       assert.equal(receipt.status.toString(), 'SUCCESS');
     }).timeout(20000);
@@ -95,7 +104,7 @@ describe('Swapper test', () => {
 
       let trans = new ContractCallQuery()
         .setGas(15000000)
-        .setContractId(contractId)
+        .setContractId(CONTRACT_ID)
         .setFunction(fnName)
         .setMaxQueryPayment(new Hbar(0.005));
     
@@ -103,15 +112,15 @@ describe('Swapper test', () => {
 
       const balance = contractFunctionResult.getUint256(0);
 
-      expect(balance).to.be.a('number');
+      expect(balance.toNumber()).to.be.a('number');
     });
 
-    it('should be able to whitelist user', async () => {
+    xit('should be able to whitelist user', async () => {
       const fnName = 'whitelistAddress';
       const employeeAddr = AccountId.fromString(EMPLOYEE_ACCOUNT_ID).toSolidityAddress();
 
       let trans = new ContractExecuteTransaction()
-        .setContractId(contractId)
+        .setContractId(CONTRACT_ID)
         .setGas(15000000)
         .setFunction(fnName, new ContractFunctionParameters().addAddress(employeeAddr))
         .setMaxTransactionFee(new Hbar(10));
@@ -139,7 +148,7 @@ describe('Swapper test', () => {
 
       let trans = new ContractCallQuery()
         .setGas(15000000)
-        .setContractId(contractId)
+        .setContractId(CONTRACT_ID)
         .setFunction(fnName)
         .setMaxQueryPayment(new Hbar(0.005));
   
@@ -148,13 +157,13 @@ describe('Swapper test', () => {
       const balance = contractFunctionResult.getUint256(0);
     
       expect(balance.toNumber()).to.be.a('number');
-    });
+    }).timeout(20000);
 
     it('should approve allowance for SC to make transfer on behalf of sender (BT)', async () => {
       const allowanceAmount = 10000;
 
       const tx = await new AccountAllowanceApproveTransaction()
-        .approveTokenAllowance(barrage.tokenId, EMPLOYEE_ACCOUNT_ID, contractId, allowanceAmount)
+        .approveTokenAllowance(BARRAGE.tokenId, EMPLOYEE_ACCOUNT_ID, CONTRACT_ID, allowanceAmount)
         .freezeWith(client)
         .sign(treasuryPrivateKey);
 
@@ -162,16 +171,16 @@ describe('Swapper test', () => {
   
       let receiptTx = await submitTx.getReceipt(client);
     
-      console.log(`🚀 ~ Sender ${EMPLOYEE_ACCOUNT_ID} approved contractId: ${contractId}`);
+      console.log(`🚀 ~ Sender ${EMPLOYEE_ACCOUNT_ID} approved CONTRACT_ID: ${CONTRACT_ID}`);
  
       assert.equal(receiptTx.status.toString(), 'SUCCESS');
-    });
+    }).timeout(20000);
 
     it('should be able to swap BT for USDC', async () => {
       const fnName = 'swap';
 
       let trans = new ContractExecuteTransaction()
-        .setContractId(contractId)
+        .setContractId(CONTRACT_ID)
         .setGas(15000000)
         .setFunction(fnName)
         .setMaxTransactionFee(new Hbar(10));

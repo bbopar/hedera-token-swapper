@@ -7,8 +7,8 @@ const {
 } = require("@hashgraph/sdk");
 require('dotenv').config();
 
-const treasuryAccountID = process.env.COMPANY_ADMIN_ACCOUNT_ID;
-const treasuryPrivateKey = PrivateKey.fromString(process.env.COMPANY_ADMIN_DER_KEY);
+const treasuryAccountID = process.env.DEPLOYER_ACCOUNT_ID;
+const treasuryPrivateKey = PrivateKey.fromString(process.env.DEPLOYER_DER_PRIVATE_KEY);
 
 const treasuryClient = Client.forTestnet();
 treasuryClient.setOperator(treasuryAccountID, treasuryPrivateKey);

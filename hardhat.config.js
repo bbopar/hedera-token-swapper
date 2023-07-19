@@ -3,7 +3,7 @@ require("@nomicfoundation/hardhat-chai-matchers");
 require("@nomiclabs/hardhat-ethers");
 require("dotenv").config();
 
-const TREASURY_PRIVATE_KEY = process.env.TREASURY_HEX_PRIVATE_KEY;
+const TREASURY_PRIVATE_KEY = process.env.DEPLOYER_HEX_PRIVATE_KEY;
 // const COMPANY_ADMIN_PRIVATE_KEY = process.env.ADMIN_HEX_PRIVATE_KEY;
 // const EMPLOYEE_PRIVATE_KEY = process.env.ADMIN_HEX_PRIVATE_KEY;
 

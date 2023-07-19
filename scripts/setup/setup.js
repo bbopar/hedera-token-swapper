@@ -3,11 +3,13 @@ const {
   createAccounts,
   tokenAssociateAccounts,
   transferTokens,
-} = require("./setupACCOUNTS");
+} = require("./setupAccounts");
 const { createTokens } = require("./setupTokens");
 const { deployContract } = require("./deploySetup");
 const { grantAdminRole } = require("./setupStateChangesForSC");
 const { getContractID } = require('./getContractID');
+const { getAccountBalance } = require('./getBalance');
+require('dotenv').config();
 
 const FILE_DESCRIPTOR = "setup.json";
 
@@ -20,6 +22,10 @@ async function main() {
     fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(accData, null, 2));
   } catch (error) {
     // If read file errors then prepare new `setup.json`.
+    const deployerBalance = await getAccountBalance(process.env.DEPLOYER_ACCOUNT_ID);
+
+    console.log('🚀 ~ file: setup.js:26 ~ main ~ deployerBalance:', deployerBalance);
+    
     const ACCOUNTS = await createAccounts();
 
     const { BARRAGE, USDC } = await createTokens(
@@ -35,14 +41,20 @@ async function main() {
 
     const contractAddress = await deployContract(BARRAGE.evmAddress, USDC.evmAddress);
 
+    const contractId = await getContractID(contractAddress);
+
     const setup = {
       ...result,
       ACCOUNTS,
       CONTRACT_ADDRESS: contractAddress,
-      CONTRACT_ID: await getContractID(contractAddress),
+      CONTRACT_ID: contractId,
     };
 
-    await grantAdminRole(ACCOUNTS.COMPANY_ADMIN_ACCOUNT_ID, contractAddress);
+    await grantAdminRole(ACCOUNTS.COMPANY_ADMIN_ACCOUNT_ID, contractId);
+
+    const deployerBal = await getAccountBalance(process.env.DEPLOYER_ACCOUNT_ID);
+
+    console.log('🚀 ~ file: setup.js:56 ~ main ~ deployerBal:', deployerBal);
 
     fs.writeFileSync(FILE_DESCRIPTOR, JSON.stringify(setup, null, 2));
   }
